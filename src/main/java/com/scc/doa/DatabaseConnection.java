@@ -12,7 +12,7 @@ public class DatabaseConnection {
 
     public static Connection getConnection() throws SQLException {
         try {
-            Class.forName("org.sqlite.JDBC");   // makes a missing driver obvious
+            Class.forName("org.sqlite.JDBC"); // makes a missing driver obvious
         } catch (ClassNotFoundException e) {
             throw new SQLException("SQLite driver not found - reload Maven", e);
         }
@@ -27,7 +27,8 @@ public class DatabaseConnection {
                     username TEXT UNIQUE NOT NULL,
                     password TEXT NOT NULL,
                     full_name TEXT NOT NULL,
-                    roles TEXT NOT NULL
+                    roles TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'PENDING'
                 )
                 """;
         try (Connection conn = getConnection(); Statement st = conn.createStatement()) {

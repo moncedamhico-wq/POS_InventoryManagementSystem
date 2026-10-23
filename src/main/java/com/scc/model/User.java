@@ -6,19 +6,21 @@ public class User {
     private String password;
     private String fullName;
     private String roles;
+    private String status;
 
     public User() {}
 
-    public User(int id, String username, String password, String fullName, String roles) {
+    public User(int id, String username, String password, String fullName, String roles, String status) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.fullName = fullName;
         this.roles = roles;
+        this.status = status;
     }
 
     public User(String username, String password, String fullName, String roles) {
-        this(0, username, password, fullName, roles);
+        this(0, username, password, fullName, roles, "PENDING");
     }
 
     public int getId() { return id; }
@@ -35,6 +37,9 @@ public class User {
 
     public String getRoles() { return roles; }
     public void setRoles(String roles) { this.roles = roles; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
     public boolean isAdmin() { return "ADMIN".equalsIgnoreCase(roles); }
 }

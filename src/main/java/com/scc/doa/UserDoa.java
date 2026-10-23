@@ -2,32 +2,29 @@ package com.scc.doa;
 
 import com.scc.model.User;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.List;
 
 public class UserDoa {
 
-    /** Saves a new user. Returns false if the username already exists or on error. */
     public boolean register(User user) {
         if (usernameExists(user.getUsername())) {
             return false;
         }
-        String sql = "INSERT INTO Users (username, password, full_name, roles) VALUES (?, ?, ?, ?)";
+        // Stores plain text password directly
+        String sql = "INSERT INTO Users (username, password, full_name, roles, status) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getUsername());
-            ps.setString(2, hash(user.getPassword()));
+            ps.setString(2, user.getPassword());
             ps.setString(3, user.getFullName());
             ps.setString(4, user.getRoles());
+            ps.setString(5, user.getStatus() != null ? user.getStatus() : "PENDING");
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.out.println("Register error: " + e.getMessage());
@@ -35,13 +32,13 @@ public class UserDoa {
         }
     }
 
-    /** Returns the User if username/password are correct, otherwise null. */
     public User login(String username, String password) {
-        String sql = "SELECT id, username, password, full_name, roles FROM Users WHERE username = ? AND password = ?";
+        // Compares plain text password directly
+        String sql = "SELECT id, username, password, full_name, roles, status FROM Users WHERE username = ? AND password = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
-            ps.setString(2, hash(password));
+            ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return map(rs);
@@ -69,7 +66,7 @@ public class UserDoa {
 
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT id, username, password, full_name, roles FROM Users ORDER BY id";
+        String sql = "SELECT id, username, password, full_name, roles, status FROM Users ORDER BY id";
         try (Connection conn = DatabaseConnection.getConnection();
              Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery(sql)) {
@@ -82,18 +79,41 @@ public class UserDoa {
         return users;
     }
 
-    private User map(ResultSet rs) throws SQLException {
-        return new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"),
-                rs.getString("full_name"), rs.getString("roles"));
+    public List<User> getPendingUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT id, username, password, full_name, roles, status FROM Users WHERE status = 'PENDING' ORDER BY id";
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                users.add(map(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+        return users;
     }
 
-    /** SHA-256 so plain-text passwords are never stored in the database. */
-    private String hash(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(md.digest(password.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+    public boolean approveUser(int userId) {
+        String sql = "UPDATE Users SET status = 'APPROVED' WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Approve error: " + e.getMessage());
+            return false;
         }
+    }
+
+    private User map(ResultSet rs) throws SQLException {
+        return new User(
+                rs.getInt("id"),
+                rs.getString("username"),
+                rs.getString("password"),
+                rs.getString("full_name"),
+                rs.getString("roles"),
+                rs.getString("status")
+        );
     }
 }

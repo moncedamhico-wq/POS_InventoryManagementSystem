@@ -47,6 +47,11 @@ public class Main {
             return;
         }
 
+        if ("PENDING".equalsIgnoreCase(user.getStatus())) {
+            System.out.println("Your account is pending admin approval.");
+            return;
+        }
+
         System.out.println("Welcome, " + user.getFullName() + "!");
         if (user.isAdmin()) {
             new AdminMenu(scanner, userDoa, user).show();
@@ -63,16 +68,25 @@ public class Main {
         System.out.print("Password: ");
         String password = scanner.nextLine();
         System.out.print("Role (1 = User, 2 = Admin): ");
-        String roles = scanner.nextLine().trim().equals("2") ? "ADMIN" : "USER";
+
+        String roleChoice = scanner.nextLine().trim();
+        String roles = roleChoice.equals("2") ? "ADMIN" : "USER";
+
+        // Admins are automatically APPROVED, regular Users start as PENDING
+        String status = "ADMIN".equals(roles) ? "APPROVED" : "PENDING";
 
         if (fullName.isEmpty() || username.isEmpty() || password.isEmpty()) {
             System.out.println("All fields are required.");
             return;
         }
 
-        User user = new User(username, password, fullName, roles);
+        User user = new User(0, username, password, fullName, roles, status);
         if (userDoa.register(user)) {
-            System.out.println("Registration successful! You can now log in.");
+            if ("ADMIN".equals(roles)) {
+                System.out.println("Admin registration successful! You can now log in immediately.");
+            } else {
+                System.out.println("Registration successful! Your account is pending admin approval.");
+            }
         } else {
             System.out.println("Registration failed (username may already exist).");
         }
