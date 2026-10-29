@@ -106,6 +106,32 @@ public class UserDoa {
         }
     }
 
+    // Deliverable 7: update only the role and the status of one user
+    public boolean updateUserAndStatus(int userId, String newRoles, String newStatus) {
+
+        String sql = "UPDATE Users SET roles = ?, status = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, newRoles.toUpperCase());
+            ps.setString(2, newStatus.toUpperCase());
+            ps.setInt(3, userId);
+
+            int rowsUpdated = ps.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println(" -> User ID: " + userId + " updated successfully!");
+                return true;
+
+            } else {
+                System.out.println(" -> User ID not found.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error updating user: " + e.getMessage());
+        }
+        return false;
+    }
+
     private User map(ResultSet rs) throws SQLException {
         return new User(
                 rs.getInt("id"),
